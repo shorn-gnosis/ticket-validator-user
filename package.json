@@ -7,7 +7,7 @@
     "build": "npx tsc && vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist --repo https://github.com/shorn-gnosis/ticket-validator.git"
+    "deploy": "gh-pages -d dist --repo git@github.com:shorn-gnosis/ticket-validator-user.git"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.0",

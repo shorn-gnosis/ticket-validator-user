@@ -78,67 +78,68 @@ function App() {
         contractName = "Unlock Protocol NFT";
       }
       
-      const tokenIdToCheck = 1; // Assuming the ticket is tokenId 1
-
+      // Check balance first (like the staff app does)
       try {
-        console.log(`Checking owner of tokenId ${tokenIdToCheck} for contract ${NFT_CONTRACT_ADDRESS}`);
-        const owner = await contract.ownerOf(tokenIdToCheck);
-        console.log(`Owner of tokenId ${tokenIdToCheck}: ${owner}`);
-        isValid = owner.toLowerCase() === walletAddress.toLowerCase();
-        console.log(`Address comparison: ${owner.toLowerCase()} === ${walletAddress.toLowerCase()} -> ${isValid}`);
+        console.log(`Checking balance for ${walletAddress}`);
+        const balance = await contract.balanceOf(walletAddress);
+        console.log(`Balance for ${walletAddress}: ${balance}`);
+        isValid = balance > 0n;
+        console.log(`Balance check result: ${isValid}`);
         
         if (isValid) {
-          foundTokenId = tokenIdToCheck;
+          // If balance is positive, try to determine which token ID the user owns
+          foundTokenId = 0; // Default if we can't determine the exact token ID
+          eventName = "Unlock Event";
           
-          // Try to get event name from tokenURI
+          // Try to get more details if possible
+          const tokenIdToCheck = 1; // Try token ID 1 as a possibility
           try {
-            const tokenURI = await contract.tokenURI(tokenIdToCheck);
-            console.log(`Token URI: ${tokenURI}`);
+            console.log(`Checking owner of tokenId ${tokenIdToCheck} for contract ${NFT_CONTRACT_ADDRESS}`);
+            const owner = await contract.ownerOf(tokenIdToCheck);
+            console.log(`Owner of tokenId ${tokenIdToCheck}: ${owner}`);
             
-            // Try to parse the tokenURI if it's a JSON string or fetch if it's a URL
-            try {
-              // If it's a base64 encoded JSON (common in NFTs)
-              if (tokenURI.startsWith('data:application/json;base64,')) {
-                const base64Data = tokenURI.split(',')[1];
-                const jsonString = atob(base64Data);
-                const metadata = JSON.parse(jsonString);
-                eventName = metadata.name || "Unlock Event";
-              } else if (tokenURI.startsWith('http')) {
-                // We can't fetch in this context, so we'll just use a placeholder
-                eventName = "Unlock Event";
-              } else {
+            // If this wallet owns token ID 1, update the details
+            if (owner.toLowerCase() === walletAddress.toLowerCase()) {
+              foundTokenId = tokenIdToCheck;
+              
+              // Try to get event name from tokenURI
+              try {
+                const tokenURI = await contract.tokenURI(tokenIdToCheck);
+                console.log(`Token URI: ${tokenURI}`);
+                
+                // Try to parse the tokenURI if it's a JSON string or fetch if it's a URL
+                try {
+                  // If it's a base64 encoded JSON (common in NFTs)
+                  if (tokenURI.startsWith('data:application/json;base64,')) {
+                    const base64Data = tokenURI.split(',')[1];
+                    const jsonString = atob(base64Data);
+                    const metadata = JSON.parse(jsonString);
+                    eventName = metadata.name || "Unlock Event";
+                  } else if (tokenURI.startsWith('http')) {
+                    // We can't fetch in this context, so we'll just use a placeholder
+                    eventName = "Unlock Event";
+                  } else {
+                    eventName = "Unlock Event";
+                  }
+                } catch (parseError) {
+                  console.error("Error parsing token URI:", parseError);
+                  eventName = "Unlock Event";
+                }
+              } catch (uriError) {
+                console.error("Error getting token URI:", uriError);
                 eventName = "Unlock Event";
               }
-            } catch (parseError) {
-              console.error("Error parsing token URI:", parseError);
-              eventName = "Unlock Event";
             }
-          } catch (uriError) {
-            console.error("Error getting token URI:", uriError);
-            eventName = "Unlock Event";
+          } catch (ownerError) {
+            console.error(`Error checking ownerOf tokenId ${tokenIdToCheck}:`, ownerError);
+            // This is fine - we already know they have a valid ticket from the balance check
           }
         }
-      } catch (ownerError) {
-        console.error(`Error checking ownerOf tokenId ${tokenIdToCheck}:`, ownerError);
-        // Fallback to balanceOf if ownerOf fails
-        try {
-          console.log(`Falling back to balanceOf check for ${walletAddress}`);
-          const balance = await contract.balanceOf(walletAddress);
-          console.log(`Balance for ${walletAddress}: ${balance}`);
-          isValid = balance > 0n;
-          console.log(`Balance check result: ${isValid}`);
-          
-          if (isValid) {
-            // If we only know they have a balance > 0, we don't know which token ID
-            foundTokenId = 0; // Unknown token ID
-            eventName = "Unlock Event";
-          }
-        } catch (balanceError) {
-          console.error("Error checking balance:", balanceError);
-          setIsValidTicket(false);
-          setNftDetails(null);
-          return;
-        }
+      } catch (balanceError) {
+        console.error("Error checking balance:", balanceError);
+        setIsValidTicket(false);
+        setNftDetails(null);
+        return;
       }
       
       setIsValidTicket(isValid);

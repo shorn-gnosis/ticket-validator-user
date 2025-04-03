@@ -8,8 +8,8 @@ declare global {
   }
 }
 
-// const NFT_CONTRACT_ADDRESS = '0xa53A5773b9d4cE2cf5b42A7711239833b31ffc38'; // dappcon test
-const NFT_CONTRACT_ADDRESS = '0x1145d7f127c438286cf499CD9e869253266672e1'; // my test
+//const NFT_CONTRACT_ADDRESS = '0xa53A5773b9d4cE2cf5b42A7711239833b31ffc38'; // dappcon test
+const NFT_CONTRACT_ADDRESS = '0x9340184741D938453bF66D77d551Cc04Ab2F4925'; // my test
 const PURCHASE_URL = 'https://app.metri.xyz/transfer/0x1145d7f127c438286cf499CD9e869253266672e1/crc/1';
 const SUPPORT_EMAIL = 'support@aboutcircles.com';
 

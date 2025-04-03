@@ -15,7 +15,6 @@ const SUPPORT_EMAIL = 'support@aboutcircles.com';
 
 // Interface for NFT details
 interface NFTDetails {
-  tokenId: number;
   contractName: string;
   eventName: string;
 }
@@ -66,7 +65,6 @@ function App() {
       }
 
       let isValid = false;
-      let foundTokenId = 0;
       let contractName = "";
       let eventName = "";
       
@@ -88,53 +86,8 @@ function App() {
         console.log(`Balance check result: ${isValid}`);
         
         if (isValid) {
-          // If balance is positive, try to determine which token ID the user owns
-          foundTokenId = 0; // Default if we can't determine the exact token ID
+          // If balance is positive, set default event name
           eventName = "Unlock Event";
-          
-          // Try to get more details if possible
-          const tokenIdToCheck = 1; // Try token ID 1 as a possibility
-          try {
-            console.log(`Checking owner of tokenId ${tokenIdToCheck} for contract ${NFT_CONTRACT_ADDRESS}`);
-            const owner = await contract.ownerOf(tokenIdToCheck);
-            console.log(`Owner of tokenId ${tokenIdToCheck}: ${owner}`);
-            
-            // If this wallet owns token ID 1, update the details
-            if (owner.toLowerCase() === walletAddress.toLowerCase()) {
-              foundTokenId = tokenIdToCheck;
-              
-              // Try to get event name from tokenURI
-              try {
-                const tokenURI = await contract.tokenURI(tokenIdToCheck);
-                console.log(`Token URI: ${tokenURI}`);
-                
-                // Try to parse the tokenURI if it's a JSON string or fetch if it's a URL
-                try {
-                  // If it's a base64 encoded JSON (common in NFTs)
-                  if (tokenURI.startsWith('data:application/json;base64,')) {
-                    const base64Data = tokenURI.split(',')[1];
-                    const jsonString = atob(base64Data);
-                    const metadata = JSON.parse(jsonString);
-                    eventName = metadata.name || "Unlock Event";
-                  } else if (tokenURI.startsWith('http')) {
-                    // We can't fetch in this context, so we'll just use a placeholder
-                    eventName = "Unlock Event";
-                  } else {
-                    eventName = "Unlock Event";
-                  }
-                } catch (parseError) {
-                  console.error("Error parsing token URI:", parseError);
-                  eventName = "Unlock Event";
-                }
-              } catch (uriError) {
-                console.error("Error getting token URI:", uriError);
-                eventName = "Unlock Event";
-              }
-            }
-          } catch (ownerError) {
-            console.error(`Error checking ownerOf tokenId ${tokenIdToCheck}:`, ownerError);
-            // This is fine - we already know they have a valid ticket from the balance check
-          }
         }
       } catch (balanceError) {
         console.error("Error checking balance:", balanceError);
@@ -147,7 +100,6 @@ function App() {
       
       if (isValid) {
         setNftDetails({
-          tokenId: foundTokenId,
           contractName: contractName,
           eventName: eventName
         });
@@ -219,7 +171,6 @@ function App() {
             <h3>NFT Details</h3>
             <p>Contract Name: {nftDetails.contractName}</p>
             <p>Event Name: {nftDetails.eventName}</p>
-            {nftDetails.tokenId > 0 && <p>Token ID: {nftDetails.tokenId}</p>}
           </div>
         )}
       </div>

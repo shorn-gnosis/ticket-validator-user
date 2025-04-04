@@ -80,7 +80,8 @@ function App() {
       // Check balance first (like the staff app does)
       try {
         console.log(`Checking balance for ${walletAddress}`);
-        const balance = await contract.balanceOf(walletAddress);
+        const normalizedAddress = walletAddress.toLowerCase();
+        const balance = await contract.balanceOf(normalizedAddress);
         console.log(`Balance for ${walletAddress}: ${balance}`);
         isValid = balance > 0n;
         console.log(`Balance check result: ${isValid}`);

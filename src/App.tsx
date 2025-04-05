@@ -2,120 +2,119 @@ import { useState } from 'react';
 import { ethers } from 'ethers';
 import './App.css';
 
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
-
-//const NFT_CONTRACT_ADDRESS = '0xa53A5773b9d4cE2cf5b42A7711239833b31ffc38'; // dappcon test
-const NFT_CONTRACT_ADDRESS = '0x9340184741D938453bF66D77d551Cc04Ab2F4925'; // my test
+const NFT_CONTRACT_ADDRESS = '0x9340184741D938453bF66D77d551Cc04Ab2F4925'; // M3trik Lock
 const PURCHASE_URL = 'https://app.metri.xyz/transfer/0x1145d7f127c438286cf499CD9e869253266672e1/crc/1';
 const SUPPORT_EMAIL = 'support@aboutcircles.com';
 
-// Interface for NFT details
-interface NFTDetails {
-  contractName: string;
-  eventName: string;
-}
+// ABI inclusive of how the unlock protocol handles
+const ABI = [
+  'function getHasValidKey(address) view returns (bool)',
+  'function balanceOf(address) view returns (uint256)',
+  'function keyExpirationTimestampFor(address) view returns (uint256)'
+];
 
 function App() {
   const [walletAddress, setWalletAddress] = useState('');
   const [isValidTicket, setIsValidTicket] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [nftDetails, setNftDetails] = useState<NFTDetails | null>(null);
-  
-  // Function to handle validation
+  const [errorInfo, setErrorInfo] = useState<string | null>(null);
+
   const checkTicketValidity = async () => {
     setIsLoading(true);
-    setIsValidTicket(null); // Reset status
+    setIsValidTicket(null);
+    setErrorInfo(null);
 
     if (!walletAddress) {
-        console.error("Wallet address missing");
-        setIsValidTicket(false);
-        setIsLoading(false);
-        return;
+      setErrorInfo('Please enter a wallet address');
+      setIsLoading(false);
+      return;
     }
 
+    let normalizedAddress;
     try {
-      // Use JsonRpcProvider for read-only operations (no wallet connection needed)
-      // This allows testing with any wallet address without connecting
-      const provider = window.ethereum 
-        ? new ethers.BrowserProvider(window.ethereum)
-        : new ethers.JsonRpcProvider("https://rpc.gnosischain.com");
-      
-      console.log("Using provider:", provider.constructor.name);
-      const contract = new ethers.Contract(
-        NFT_CONTRACT_ADDRESS,
-        [
-          "function ownerOf(uint256 tokenId) view returns (address)",
-          "function balanceOf(address owner) view returns (uint256)",
-          "function name() view returns (string)",
-          "function symbol() view returns (string)",
-          "function tokenURI(uint256 tokenId) view returns (string)"
-        ],
-        provider
-      );
-      // Validate the address format before making the call
-      if (!ethers.isAddress(walletAddress)) {
-          console.error("Invalid wallet address format");
-          setIsValidTicket(false);
-          setIsLoading(false);
-          return;
-      }
+      normalizedAddress = ethers.getAddress(walletAddress);
+    } catch (error) {
+      setErrorInfo('Invalid wallet address format');
+      setIsLoading(false);
+      return;
+    }
 
-      let isValid = false;
-      let contractName = "";
-      let eventName = "";
+    console.log("Checking validity for address:", normalizedAddress);
+
+    try {
+      // Always use a direct RPC provider - simpler and more reliable
+      const provider = new ethers.JsonRpcProvider('https://rpc.gnosischain.com');
+      console.log("Connected to Gnosis Chain");
+
+      const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, ABI, provider);
       
-      // Try to get contract name
+      // Step 1: Try getHasValidKey
       try {
-        contractName = await contract.name();
-        console.log(`Contract name: ${contractName}`);
-      } catch (nameError) {
-        console.error("Error getting contract name:", nameError);
-        contractName = "Unlock Protocol NFT";
-      }
-      
-      // Check balance first (like the staff app does)
-      try {
-        console.log(`Checking balance for ${walletAddress}`);
-        const normalizedAddress = walletAddress.toLowerCase();
-        const balance = await contract.balanceOf(normalizedAddress);
-        console.log(`Balance for ${walletAddress}: ${balance}`);
-        isValid = balance > 0n;
-        console.log(`Balance check result: ${isValid}`);
+        console.log("Calling getHasValidKey...");
+        const hasValidKey = await contract.getHasValidKey(normalizedAddress);
+        console.log("getHasValidKey result:", hasValidKey);
         
-        if (isValid) {
-          // If balance is positive, set default event name
-          eventName = "Unlock Event";
+        setIsValidTicket(hasValidKey);
+        
+        // If invalid, let's try to find out why
+        if (!hasValidKey) {
+          // Step 2: Check balance to see if they own a key at all
+          try {
+            const balance = await contract.balanceOf(normalizedAddress);
+            console.log("balanceOf result:", balance.toString());
+            
+            if (balance > 0) {
+              // Step 3: Check if the key is expired
+              try {
+                const expiration = await contract.keyExpirationTimestampFor(normalizedAddress);
+                const now = Math.floor(Date.now() / 1000); // Current time in seconds
+                console.log("Key expiration timestamp:", expiration.toString());
+                console.log("Current timestamp:", now);
+                
+                if (expiration < now) {
+                  setErrorInfo('Your key has expired');
+                } else {
+                  setErrorInfo('You own a key but it appears to be invalid');
+                }
+              } catch (expError: any) {
+                console.error("Error checking expiration:", expError);
+                setErrorInfo('Error checking key expiration');
+              }
+            } else {
+              setErrorInfo('No key found for this address');
+            }
+          } catch (balanceError: any) {
+            console.error("Error checking balance:", balanceError);
+            setErrorInfo('Error checking key ownership');
+          }
         }
-      } catch (balanceError) {
-        console.error("Error checking balance:", balanceError);
+      } catch (validKeyError: any) {
+        console.error("Error in getHasValidKey:", validKeyError);
+        
+        // Let's try to extract the specific error
+        if (validKeyError.message) {
+          console.log("Error message:", validKeyError.message);
+          
+          if (validKeyError.message.includes("call revert exception")) {
+            setErrorInfo('Contract call failed - the contract might not support this method');
+          } else if (validKeyError.message.includes("network")) {
+            setErrorInfo('Network connection error - please try again');
+          } else {
+            setErrorInfo(`Error: ${validKeyError.message}`);
+          }
+        }
+        
         setIsValidTicket(false);
-        setNftDetails(null);
-        return;
       }
-      
-      setIsValidTicket(isValid);
-      
-      if (isValid) {
-        setNftDetails({
-          contractName: contractName,
-          eventName: eventName
-        });
-      } else {
-        setNftDetails(null);
-      }
-    } catch (providerError) {
-        console.error("Error initializing provider/contract or during owner check:", providerError);
-        setIsValidTicket(false);
+    } catch (error: any) {
+      console.error('General validation error:', error);
+      setIsValidTicket(false);
+      setErrorInfo(`Error: ${error.message || 'Unknown error'}`);
     } finally {
-        setIsLoading(false); // Ensure loading state is always reset
+      setIsLoading(false);
     }
   };
 
-  // Function to handle purchase button click
   const handlePurchase = () => {
     window.open(PURCHASE_URL, '_blank');
   };
@@ -123,7 +122,7 @@ function App() {
   return (
     <div className="App">
       <h1>NFT Ticket Checker</h1>
-      
+
       <input
         type="text"
         placeholder="Enter Wallet Address"
@@ -131,10 +130,11 @@ function App() {
         onChange={(e) => setWalletAddress(e.target.value)}
         className="wallet-input"
       />
+
       <div className="button-group">
         <button
           onClick={checkTicketValidity}
-          disabled={isLoading || !walletAddress} // Disable if loading or no address
+          disabled={isLoading || !walletAddress}
           className="validate-button"
         >
           {isLoading ? 'Checking...' : 'Validate Ticket'}
@@ -143,9 +143,9 @@ function App() {
           onClick={() => {
             setWalletAddress('');
             setIsValidTicket(null);
-            setNftDetails(null);
+            setErrorInfo(null);
           }}
-          disabled={isLoading || !walletAddress}
+          disabled={isLoading}
           className="reset-button"
         >
           Reset
@@ -153,31 +153,24 @@ function App() {
       </div>
 
       {isLoading && <p>Checking ticket validity...</p>}
-      {isValidTicket === true && <p className="valid">Valid Ticket!</p>}
-      {isValidTicket === false && (
+      {errorInfo && <p className="error-message">{errorInfo}</p>}
+      {isValidTicket === true && <p className="valid">✅ Valid Ticket!</p>}
+      {isValidTicket === false && !errorInfo && (
         <div className="invalid-container">
-          <p className="invalid">Invalid Ticket!</p>
+          <p className="invalid">❌ Invalid Ticket!</p>
           <button onClick={handlePurchase} className="purchase-button">
             Purchase Ticket
           </button>
         </div>
       )}
-      
+
       <div className="info-box">
         <h3>Contract Information</h3>
-        <p>NFT Contract: {NFT_CONTRACT_ADDRESS}</p>
-        
-        {nftDetails && (
-          <div className="nft-details">
-            <h3>NFT Details</h3>
-            <p>Contract Name: {nftDetails.contractName}</p>
-            <p>Event Name: {nftDetails.eventName}</p>
-          </div>
-        )}
+        <p>Lock Contract: {NFT_CONTRACT_ADDRESS}</p>
       </div>
-      
+
       <div className="support-container">
-        <p>Need help? <a href={`mailto:${SUPPORT_EMAIL}`} className="support-link">Contact Support</a></p>
+        <p>Need help? <a href={`mailto:${SUPPORT_EMAIL}`}>Contact Support</a></p>
       </div>
     </div>
   );

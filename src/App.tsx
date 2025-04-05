@@ -39,20 +39,20 @@ function App() {
       return;
     }
 
-    console.log("Checking validity for address:", normalizedAddress);
+    // console.log("Checking validity for address:", normalizedAddress);
 
     try {
       // Always use a direct RPC provider - simpler and more reliable
       const provider = new ethers.JsonRpcProvider('https://rpc.gnosischain.com');
-      console.log("Connected to Gnosis Chain");
+      // console.log("Connected to Gnosis Chain");
 
       const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, ABI, provider);
       
       // Step 1: Try getHasValidKey
       try {
-        console.log("Calling getHasValidKey...");
+        // console.log("Calling getHasValidKey...");
         const hasValidKey = await contract.getHasValidKey(normalizedAddress);
-        console.log("getHasValidKey result:", hasValidKey);
+        // console.log("getHasValidKey result:", hasValidKey);
         
         setIsValidTicket(hasValidKey);
         
@@ -61,15 +61,15 @@ function App() {
           // Step 2: Check balance to see if they own a key at all
           try {
             const balance = await contract.balanceOf(normalizedAddress);
-            console.log("balanceOf result:", balance.toString());
+            // console.log("balanceOf result:", balance.toString());
             
             if (balance > 0) {
               // Step 3: Check if the key is expired
               try {
                 const expiration = await contract.keyExpirationTimestampFor(normalizedAddress);
                 const now = Math.floor(Date.now() / 1000); // Current time in seconds
-                console.log("Key expiration timestamp:", expiration.toString());
-                console.log("Current timestamp:", now);
+                // console.log("Key expiration timestamp:", expiration.toString());
+                // console.log("Current timestamp:", now);
                 
                 if (expiration < now) {
                   setErrorInfo('Your key has expired');

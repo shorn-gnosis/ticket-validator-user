@@ -1,10 +1,11 @@
 .App {
+  position: relative;
   max-width: 600px;
   margin: 2rem auto;
   padding: 2rem;
   text-align: center;
-  background: #f8f9fa;
-  border-radius: 8px;
+  background: var(--theme-primary-bg);
+  border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
@@ -12,8 +13,8 @@
   width: 100%;
   padding: 0.75rem;
   margin: 1rem 0;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid var(--theme-border);
+  border-radius: 12px;
   font-size: 1rem;
 }
 
@@ -25,18 +26,18 @@
 }
 
 .validate-button {
-  background: #4CAF50;
-  color: white;
+  background: var(--theme-button-bg);
+  color: var(--theme-button-text);
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  border-radius: 12px;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.3s;
 }
 
 .validate-button:hover {
-  background: #45a049;
+  background: var(--theme-accent); /* Slightly darker yellow */
 }
 
 .validate-button:disabled {
@@ -45,18 +46,18 @@
 }
 
 .reset-button {
-  background: #ff9800;
-  color: white;
+  background: var(--theme-button-bg);
+  color: var(--theme-button-text);
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  border-radius: 12px;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.3s;
 }
 
 .reset-button:hover {
-  background: #f57c00;
+  background: var(--theme-accent); /* Slightly darker yellow */
 }
 
 .reset-button:disabled {
@@ -65,14 +66,14 @@
 }
 
 .valid {
-  color: #4CAF50;
+  color: var(--theme-accent); /* Using yellow for valid status */
   font-weight: bold;
   margin-top: 1rem;
   font-size: 1.2rem;
 }
 
 .invalid {
-  color: #f44336;
+  color: #f44336; /* Keeping red for invalid status for clarity */
   font-weight: bold;
   margin-top: 1rem;
   font-size: 1.2rem;
@@ -83,11 +84,11 @@
 }
 
 .purchase-button {
-  background: #2196F3;
-  color: white;
+  background: var(--theme-button-bg);
+  color: var(--theme-button-text);
   border: none;
   padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  border-radius: 12px;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.3s;
@@ -95,20 +96,20 @@
 }
 
 .purchase-button:hover {
-  background: #0b7dda;
+  background: var(--theme-accent); /* Slightly darker yellow */
 }
 
 .info-box {
   margin-top: 2rem;
   padding: 1rem;
-  background: #e9ecef;
-  border-radius: 4px;
+  background: #f1f8fe; /* Keeping a light blue for info boxes */
+  border-radius: 12px;
   text-align: left;
 }
 
 .info-box h3 {
   margin-top: 0;
-  color: #333;
+  color: var(--theme-primary-text);
   margin-bottom: 0.75rem;
 }
 
@@ -122,33 +123,67 @@
 .nft-details {
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--theme-border);
 }
 
 .nft-details h3 {
-  color: #2196F3;
+  color: var(--theme-accent);
 }
 
 .nft-details p {
-  background: #f1f8fe;
+  background: #f1f8fe; /* Keeping a light blue for consistency */
   padding: 0.5rem;
-  border-radius: 3px;
-  border-left: 3px solid #2196F3;
+  border-radius: 12px;
+  border-left: 3px solid var(--theme-accent);
+}
+
+.env-note {
+  font-size: 0.8rem;
+  color: #666;
+  font-style: italic;
+  margin-top: 0.25rem;
 }
 
 .support-container {
   margin-top: 2rem;
   padding-top: 1rem;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid var(--theme-border);
   font-size: 0.9rem;
 }
 
 .support-link {
-  color: #2196F3;
+  color: var(--theme-accent);
   text-decoration: none;
   font-weight: bold;
 }
 
 .support-link:hover {
   text-decoration: underline;
+}
+
+.app-logo {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  width: 50px;
+  height: auto;
+}
+
+.contract-info-toggle-container {
+  text-align: right;
+  margin-bottom: 0.5rem;
+}
+
+.contract-info-toggle-link {
+  background: none;
+  border: none;
+  color: var(--theme-accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.25rem;
+}
+
+.contract-info-toggle-link:hover {
+  color: var(--theme-primary-text);
 }

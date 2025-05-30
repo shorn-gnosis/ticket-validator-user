@@ -8,10 +8,11 @@ declare global {
   }
 }
 
-//const NFT_CONTRACT_ADDRESS = '0xa53A5773b9d4cE2cf5b42A7711239833b31ffc38'; // dappcon test
-const NFT_CONTRACT_ADDRESS = '0x9340184741D938453bF66D77d551Cc04Ab2F4925'; // my test
-const PURCHASE_URL = 'https://app.metri.xyz/transfer/0x1145d7f127c438286cf499CD9e869253266672e1/crc/1';
-const SUPPORT_EMAIL = 'support@aboutcircles.com';
+// Use environment variables with fallbacks for development/testing
+const NFT_CONTRACT_ADDRESS = import.meta.env.VITE_NFT_CONTRACT_ADDRESS || 
+  '0x9340184741D938453bF66D77d551Cc04Ab2F4925'; // Fallback address for development
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 
+  'support@aboutcircles.com'; // Fallback support email
 
 // Interface for NFT details
 interface NFTDetails {
@@ -24,6 +25,7 @@ function App() {
   const [isValidTicket, setIsValidTicket] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [nftDetails, setNftDetails] = useState<NFTDetails | null>(null);
+const [showContractInfo, setShowContractInfo] = useState(false);
   
   // Function to handle validation
   const checkTicketValidity = async () => {
@@ -56,12 +58,16 @@ function App() {
         ],
         provider
       );
-      // Validate the address format before making the call
-      if (!ethers.isAddress(walletAddress)) {
-          console.error("Invalid wallet address format");
-          setIsValidTicket(false);
-          setIsLoading(false);
-          return;
+      // Try to convert the address to checksummed format
+      // This will throw an error if the address is invalid
+      let checksummedAddress;
+      try {
+        checksummedAddress = ethers.getAddress(walletAddress);
+      } catch (error) {
+        console.error("Invalid wallet address format:", error);
+        setIsValidTicket(false);
+        setIsLoading(false);
+        return;
       }
 
       let isValid = false;
@@ -80,8 +86,8 @@ function App() {
       // Check balance first (like the staff app does)
       try {
         console.log(`Checking balance for ${walletAddress}`);
-        const normalizedAddress = walletAddress.toLowerCase();
-        const balance = await contract.balanceOf(normalizedAddress);
+        // Use the already declared checksummedAddress variable
+        const balance = await contract.balanceOf(checksummedAddress);
         console.log(`Balance for ${walletAddress}: ${balance}`);
         isValid = balance > 0n;
         console.log(`Balance check result: ${isValid}`);
@@ -116,13 +122,16 @@ function App() {
   };
 
   // Function to handle purchase button click
-  const handlePurchase = () => {
-    window.open(PURCHASE_URL, '_blank');
-  };
+
+const toggleContractInfo = () => {
+  setShowContractInfo(!showContractInfo);
+};
 
   return (
+    <>
     <div className="App">
-      <h1>NFT Ticket Checker</h1>
+      <img src="dappcon-25-logo.png" alt="DappCon Logo" className="app-logo" />
+      <h1>DappCon25 Ticket Checker</h1>
       
       <input
         type="text"
@@ -153,20 +162,27 @@ function App() {
       </div>
 
       {isLoading && <p>Checking ticket validity...</p>}
-      {isValidTicket === true && <p className="valid">Valid Ticket!</p>}
+      {isValidTicket === true && <p className="valid">Valid Dappcon25 NFT ticket found!</p>}
       {isValidTicket === false && (
         <div className="invalid-container">
-          <p className="invalid">Invalid Ticket!</p>
-          <button onClick={handlePurchase} className="purchase-button">
-            Purchase Ticket
-          </button>
+          <p className="invalid">No valid ticket found.</p>
         </div>
       )}
       
+      <div className="support-container">
+        <p>Need help? <a href={`mailto:${SUPPORT_EMAIL}`} className="support-link">Contact Support</a></p>
+      </div>
+    </div>
+    <div className="contract-info-toggle-container">
+      <button onClick={toggleContractInfo} className="contract-info-toggle-link">
+        {showContractInfo ? 'Hide contract' : 'View contract'}
+      </button>
+    </div>
+    {showContractInfo && (
       <div className="info-box">
         <h3>Contract Information</h3>
         <p>NFT Contract: {NFT_CONTRACT_ADDRESS}</p>
-        
+        <p className="env-note">Using {import.meta.env.VITE_NFT_CONTRACT_ADDRESS ? 'custom' : 'default'} contract address</p>
         {nftDetails && (
           <div className="nft-details">
             <h3>NFT Details</h3>
@@ -175,11 +191,8 @@ function App() {
           </div>
         )}
       </div>
-      
-      <div className="support-container">
-        <p>Need help? <a href={`mailto:${SUPPORT_EMAIL}`} className="support-link">Contact Support</a></p>
-      </div>
-    </div>
+    )}
+  </>
   );
 }
 

@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom color variables */
+:root {
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-yellow: rgb(255, 176, 0);
+  --theme-primary-bg: rgb(240, 239, 228); /* R: 0.9405 G: 0.9374 B: 0.9124 */
+  --theme-primary-text: var(--color-black);
+  --theme-accent: var(--color-yellow);
+  --theme-button-bg: var(--color-yellow);
+  --theme-button-text: var(--color-black);
+  --theme-border: var(--color-yellow);
+}
+
 /* Custom font styles */
 body {
   font-family: Arial, Helvetica, sans-serif;
@@ -9,12 +22,15 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: var(--theme-primary-text);
+  background-color: rgb(240, 239, 228); /* R: 0.9405 G: 0.9374 B: 0.9124 */
 }
 
 h1 {
   font-size: 2rem;
   font-weight: 600;
   margin-bottom: 1rem;
+  color: var(--theme-primary-text);
 }
 
 input, button {
